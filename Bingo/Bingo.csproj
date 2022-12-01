@@ -112,6 +112,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="bell.ico" />
+    <Content Include="drumhit.wav" />
+    <Content Include="drumroll.wav" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

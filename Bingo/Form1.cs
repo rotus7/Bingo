@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -12,21 +13,14 @@ namespace Bingo
     public partial class Form1 : Form
     {
         //
-        // コンソールウィンドウを起動するため処理
-        //
-        [DllImport("kernel32.dll")]
-        private static extern bool AllocConsole();
-
-
-        //
         // Global変数
         //
         public static class Global
         {
-            public static List<int> Numbers = new List<int>(Enumerable.Range(1,75));                                                // 選対象の数字の配列
+            public static List<int> Numbers = new List<int>(Enumerable.Range(1, 75));                                                // 選対象の数字の配列
             public static int cnt = Numbers.Count;                                                                                  // Numbersのリストの要素数(LengthはArray用)
             public static int cnt2 = cnt;                                                                                           // cntと同値
-            public static int[] num_previous = new int[5] {0, 0, 0, 0, 0};                                                          // 履歴を出すための配列
+            public static int[] num_previous = new int[5] { 0, 0, 0, 0, 0 };                                                          // 履歴を出すための配列
             public static int select = 0;                                                                                           // 選んだ番号
             public const int fast_select_times = 39;                                                                                // 早く選んでる風の時の繰り返し回数
             public const int fast_select_time = 50;                                                                                 // 早く選んでる風の時の間隔(ミリ秒単位)
@@ -37,8 +31,11 @@ namespace Bingo
             public const int color_change_times = 3;                                                                                // 決定後のエフェクトの繰り返し回数
             public readonly static List<string> rgb = new List<string> { "#E55381", "#5DA9E9", "#F4D53E", "#17B890", "#FFFFFF" };   // B, I, N, G, O 列の色(HTMLカラーコード)
             public readonly static List<string> rgb_code = new List<string> { "#000000", "#FF0000", "#00FF00", "#FFFF00" };         // Black, Red, Green, Yellow(HTMLカラーコード)
+            private static readonly string exeDirPath = Path.GetDirectoryName(Application.ExecutablePath);
+            public static string filePath = exeDirPath;
         }
 
+        private System.Media.SoundPlayer drumRoll, drumHit;    // SoundPlayerオブジェクトの使用
 
         //
         // ウィンドウの表示
@@ -46,7 +43,6 @@ namespace Bingo
         public Form1()
         {
             InitializeComponent();  // GUIウィンドウの描画処理
-            AllocConsole();         // CLIウィンドウの作成
         }
 
 
@@ -396,10 +392,12 @@ namespace Bingo
             num = array[random.Next(0, Global.cnt)];                                // 番号の決定
             await Task.Delay(Global.final_select_time);
 
+            drumRoll.Stop();                                                        // ドラムロールの停止
+
+            drumHit.Play();                                                         // ドラムを叩く音声の再生
+
             number.Text = num.ToString();                                           // 決定した番号を表示
 
-            Console.Write(num);                                                     // CLIにも表示
-            Console.Write("   ");
 
             for (int i = 0; i < Global.color_change_times; i++)                     // 決定したことをアナウンス
             {
@@ -412,7 +410,9 @@ namespace Bingo
             }
 
             tableColorChanger(num);                                                 // 対応する番号のセルの色を変更
-            
+
+            drumHit.Stop();                                                         // ドラムを叩く音声の停止
+
             number.BackColor = SystemColors.Control;                                // アナウンス終了(背景色を初期値へ)
 
             Global.select = num;                                                    // Globalへ値をコピー
@@ -431,8 +431,10 @@ namespace Bingo
         //
         private void btnClick(object sender, EventArgs e)
         {
+            string drumRollFile, drumHitFile;
+
             roulette_btn.Enabled = false;                                                                                   // Nextボタンの無効化
-            
+
             previous_1.Text = "Previous 1";                                                                                 // 履歴への表示変更
             previous_2.Text = "2";
             previous_3.Text = "3";
@@ -441,7 +443,6 @@ namespace Bingo
 
             if (Global.cnt == 0)                                                                                            // すべての番号が出た時の処理
             {
-                Console.WriteLine();                                                                                        // CLIのカーソル位置を改行
                 MessageBox.Show("すべての番号が出揃いました。", "通知", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);  // Exclamationポップアップを表示
                 Environment.Exit(0);                                                                                        // コード0x00で正常終了
             }
@@ -459,15 +460,12 @@ namespace Bingo
             previous_4_data.Text = Global.num_previous[3].ToString();
             previous_5_data.Text = Global.num_previous[4].ToString();
 
+            drumRollFile = Global.filePath + "\\drumroll.wav";
+            drumHitFile = Global.filePath + "\\drumhit.wav";
+            drumRoll = new System.Media.SoundPlayer(drumRollFile);
+            drumRoll.Play();
+            drumHit = new System.Media.SoundPlayer(drumHitFile);
             selectEffect();                                                                                                 // 数字を選ぶ(非同期プロセス)
-
-            if ((Global.cnt2 - Global.cnt) == 0)                                                                            // 初回実行時の処理
-            {
-                Console.WriteLine("------------------------");
-                Console.Write(" ");
-            }
-            else if ((Global.cnt2 - Global.cnt) % 5 == 0)                                                                   // 数字が5回表示されたら改行
-                Console.WriteLine();
         }
     }
 }
