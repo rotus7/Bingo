@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -17,10 +16,9 @@ namespace Bingo
         //
         public static class Global
         {
-            public static List<int> Numbers = new List<int>(Enumerable.Range(1, 75));                                                // 選対象の数字の配列
+            public static List<int> Numbers = new List<int>(Enumerable.Range(1, 75));                                               // 選対象の数字の配列
             public static int cnt = Numbers.Count;                                                                                  // Numbersのリストの要素数(LengthはArray用)
-            public static int cnt2 = cnt;                                                                                           // cntと同値
-            public static int[] num_previous = new int[5] { 0, 0, 0, 0, 0 };                                                          // 履歴を出すための配列
+            public static int[] num_previous = new int[5] { 0, 0, 0, 0, 0 };                                                        // 履歴を出すための配列
             public static int select = 0;                                                                                           // 選んだ番号
             public const int fast_select_times = 39;                                                                                // 早く選んでる風の時の繰り返し回数
             public const int fast_select_time = 50;                                                                                 // 早く選んでる風の時の間隔(ミリ秒単位)
@@ -31,18 +29,22 @@ namespace Bingo
             public const int color_change_times = 3;                                                                                // 決定後のエフェクトの繰り返し回数
             public readonly static List<string> rgb = new List<string> { "#E55381", "#5DA9E9", "#F4D53E", "#17B890", "#FFFFFF" };   // B, I, N, G, O 列の色(HTMLカラーコード)
             public readonly static List<string> rgb_code = new List<string> { "#000000", "#FF0000", "#00FF00", "#FFFF00" };         // Black, Red, Green, Yellow(HTMLカラーコード)
-            private static readonly string exeDirPath = Path.GetDirectoryName(Application.ExecutablePath);
-            public static string filePath = exeDirPath;
+            private static readonly string exeDirPath = Path.GetDirectoryName(Application.ExecutablePath);                          // 実行したときの自身のフォルダパスを取得
+            public static bool rollExists = false;                                                                                  // ロール音のファイルのフラグ
+            public static string rollFilepath = exeDirPath + "\\drumroll.wav";                                                      // ロール音のファイルパス
+            public static bool hitExists = false;                                                                                   // ヒット音のファイルのフラグ
+            public static string hitFilepath = exeDirPath + "\\drumhit.wav";                                                        // ヒット音のファイルパス
         }
 
-        private System.Media.SoundPlayer drumRoll, drumHit;    // SoundPlayerオブジェクトの使用
+        private System.Media.SoundPlayer drumRoll, drumHit;                                                                         // SoundPlayerオブジェクトの使用
+
 
         //
         // ウィンドウの表示
         //
         public Form1()
         {
-            InitializeComponent();  // GUIウィンドウの描画処理
+            InitializeComponent();                                                                                                  // GUIウィンドウの描画処理
         }
 
 
@@ -372,34 +374,40 @@ namespace Bingo
         private async void selectEffect()
         {
             int num;
-            int[] array = Global.Numbers.OrderBy(i => Guid.NewGuid()).ToArray();    // Global.Numbers配列をランダムに入れ替える
-            Random random = new Random();                                           // 乱数生成の準備
+            int[] array = Global.Numbers.OrderBy(i => Guid.NewGuid()).ToArray();                                                    // Global.Numbers配列をランダムに入れ替える
+            Random random = new Random();                                                                                           // 乱数生成の準備
 
-            for (int i = 0; i < Global.fast_select_times; i++)                      // 早く選んでいる風の処理
+            for (int i = 0; i < Global.fast_select_times; i++)                                                                      // 早く選んでいる風の処理
             {
                 int rand = random.Next(0, Global.cnt);
-                number.Text = array[rand].ToString();                               // 数字表示
-                await Task.Delay(Global.fast_select_time);                          // 待機処理
+                number.Text = array[rand].ToString();                                                                               // 数字表示
+                await Task.Delay(Global.fast_select_time);                                                                          // 待機処理
             }
 
-            for (int i = 0; i < Global.slow_select_times; i++)                      // 遅く選んでいる風の処理
+            for (int i = 0; i < Global.slow_select_times; i++)                                                                      // 遅く選んでいる風の処理
             {
                 int rand = random.Next(0, Global.cnt);
                 number.Text = array[rand].ToString();
                 await Task.Delay(Global.slow_select_time);
             }
 
-            num = array[random.Next(0, Global.cnt)];                                // 番号の決定
+            num = array[random.Next(0, Global.cnt)];                                                                                // 番号の決定
             await Task.Delay(Global.final_select_time);
 
-            drumRoll.Stop();                                                        // ドラムロールの停止
+            if (Global.rollExists == true)
+            {
+                drumRoll.Stop();                                                                                                    // ドラムロールの停止
+            }
 
-            drumHit.Play();                                                         // ドラムを叩く音声の再生
+            if (Global.hitExists == true)
+            {
+                drumHit.Play();                                                                                                     // ドラムを叩く音声の再生
+            }
 
-            number.Text = num.ToString();                                           // 決定した番号を表示
+            number.Text = num.ToString();                                                                                           // 決定した番号を表示
 
 
-            for (int i = 0; i < Global.color_change_times; i++)                     // 決定したことをアナウンス
+            for (int i = 0; i < Global.color_change_times; i++)                                                                     // 決定したことをアナウンス
             {
                 number.BackColor = ColorTranslator.FromHtml(Global.rgb_code[1]);
                 await Task.Delay(Global.color_change_time);
@@ -409,20 +417,23 @@ namespace Bingo
                 await Task.Delay(Global.color_change_time);
             }
 
-            tableColorChanger(num);                                                 // 対応する番号のセルの色を変更
+            tableColorChanger(num);                                                                                                 // 対応する番号のセルの色を変更
 
-            drumHit.Stop();                                                         // ドラムを叩く音声の停止
+            if (Global.hitExists == true)
+            {
+                drumHit.Stop();                                                                                                     // ドラムを叩く音声の停止
+            }
 
-            number.BackColor = SystemColors.Control;                                // アナウンス終了(背景色を初期値へ)
+            number.BackColor = SystemColors.Control;                                                                                // アナウンス終了(背景色を初期値へ)
 
-            Global.select = num;                                                    // Globalへ値をコピー
-            Global.Numbers.Remove(num);                                             // 選んだ番号に対応する要素を削除
-            Global.cnt--;                                                           // リストの長さを短くする
+            Global.select = num;                                                                                                    // Globalへ値をコピー
+            Global.Numbers.Remove(num);                                                                                             // 選んだ番号に対応する要素を削除
+            Global.cnt--;                                                                                                           // リストの長さを短くする
 
             for (int i = 4; i > 0; i--)
-                Global.num_previous[i] = Global.num_previous[i - 1];                // 履歴の更新処理
+                Global.num_previous[i] = Global.num_previous[i - 1];                                                                // 履歴の更新処理
 
-            roulette_btn.Enabled = true;                                            // Nextボタンを有効化
+            roulette_btn.Enabled = true;                                                                                            // Nextボタンを有効化
         }
 
 
@@ -431,41 +442,48 @@ namespace Bingo
         //
         private void btnClick(object sender, EventArgs e)
         {
-            string drumRollFile, drumHitFile;
+            roulette_btn.Enabled = false;                                                                                           // Nextボタンの無効化
 
-            roulette_btn.Enabled = false;                                                                                   // Nextボタンの無効化
-
-            previous_1.Text = "Previous 1";                                                                                 // 履歴への表示変更
+            previous_1.Text = "Previous 1";                                                                                         // 履歴への表示変更
             previous_2.Text = "2";
             previous_3.Text = "3";
             previous_4.Text = "4";
             previous_5.Text = "5";
 
-            if (Global.cnt == 0)                                                                                            // すべての番号が出た時の処理
+            if (Global.cnt == 0)                                                                                                    // すべての番号が出た時の処理
             {
-                MessageBox.Show("すべての番号が出揃いました。", "通知", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);  // Exclamationポップアップを表示
-                Environment.Exit(0);                                                                                        // コード0x00で正常終了
+                MessageBox.Show("すべての番号が出揃いました。", "通知", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);          // Exclamationポップアップを表示
+                Environment.Exit(0);                                                                                                // コード0x00で正常終了
             }
-            else if ((Global.cnt2 - Global.cnt) == 0)                                                                       // 最初のクリック時の処理
+            else if (Global.cnt == 75)                                                                                              // 最初のクリック時の処理
             {
-                roulette_btn.Text = "Next";                                                                                 // ボタンのテキストを変更
-                number.Font = new Font("Meiryo UI", 403F);                                                                  // サイズの変更
-                number.Text = "GO";                                                                                         // 一瞬だけ「GO」と表示
+                roulette_btn.Text = "Next";                                                                                         // ボタンのテキストを変更
+                number.Font = new Font("Meiryo UI", 403F);                                                                          // サイズの変更
+                number.Text = "GO";                                                                                                 // 一瞬だけ「GO」と表示
+                Global.rollExists = File.Exists(Global.rollFilepath);
+                Global.hitExists = File.Exists(Global.hitFilepath);
+                if (Global.rollExists == true)
+                {
+                    drumRoll = new System.Media.SoundPlayer(Global.rollFilepath);
+                }
+                if (Global.hitExists == true)
+                {
+                    drumHit = new System.Media.SoundPlayer(Global.hitFilepath);
+                }
             }
 
-            Global.num_previous[0] = Global.select;                                                                         // Global.Select(初回は0、以降は選ばれた数字)
-            previous_1_data.Text = Global.num_previous[0].ToString();                                                       // Arrayのデータを表示
+            Global.num_previous[0] = Global.select;                                                                                 // Global.Select(初回は0、以降は選ばれた数字)
+            previous_1_data.Text = Global.num_previous[0].ToString();                                                               // Arrayのデータを表示
             previous_2_data.Text = Global.num_previous[1].ToString();
             previous_3_data.Text = Global.num_previous[2].ToString();
             previous_4_data.Text = Global.num_previous[3].ToString();
             previous_5_data.Text = Global.num_previous[4].ToString();
 
-            drumRollFile = Global.filePath + "\\drumroll.wav";
-            drumHitFile = Global.filePath + "\\drumhit.wav";
-            drumRoll = new System.Media.SoundPlayer(drumRollFile);
-            drumRoll.Play();
-            drumHit = new System.Media.SoundPlayer(drumHitFile);
-            selectEffect();                                                                                                 // 数字を選ぶ(非同期プロセス)
+            if (Global.rollExists == true)
+            {
+                drumRoll.Play();
+            }
+            selectEffect();                                                                                                         // 数字を選ぶ(非同期プロセス)
         }
     }
 }
