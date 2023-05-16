@@ -452,7 +452,7 @@ namespace Bingo
 
             if (Global.cnt == 0)                                                                                                    // すべての番号が出た時の処理
             {
-                MessageBox.Show("すべての番号が出揃いました。", "通知", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);          // Exclamationポップアップを表示
+                MessageBox.Show("すべての番号が出揃いました。", "通知", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);                  // Exclamationポップアップを表示
                 Environment.Exit(0);                                                                                                // コード0x00で正常終了
             }
             else if (Global.cnt == 75)                                                                                              // 最初のクリック時の処理
